@@ -1,4 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Report Template -->
     <template id="invoice_pending_tpl">
         <t t-call="web.html_container">
             <div style="margin:20px;">
@@ -34,11 +36,14 @@
         </t>
     </template>
 
-    <report
-        id="action_pending_invoice_report_daysfilter_v4"  model="account.move"
-        string="Pending Invoice Report"
-        report_type="qweb-pdf"
-        name="auto_invoice_reminder_daysfilter.invoice_pending_tpl"
-        file="auto_invoice_reminder_daysfilter.invoice_pending_tpl"
-    />
+    <!-- Report Action -->
+    <record id="action_pending_invoice_report" model="ir.actions.report">
+        <field name="name">Pending Invoice Report</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">auto_invoice_reminder_daysfilter.invoice_pending_tpl</field>
+        <field name="report_file">auto_invoice_reminder_daysfilter.invoice_pending_tpl</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+    </record>
 </odoo>
