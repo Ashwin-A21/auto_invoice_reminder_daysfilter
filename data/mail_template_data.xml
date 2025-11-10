@@ -1,0 +1,13 @@
+<odoo>
+    <record id="email_template_pending_invoices_v4" model="mail.template"> <field name="name">Pending Invoice Reminder</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="subject">Pending Invoice Summary</field>
+        <field name="body_html"><![CDATA[
+            <p>Dear Customer,</p>
+            <p>Please find attached your pending invoice summary that is overdue by more than the specified days.</p>
+            <p>Kindly clear the dues at your earliest convenience.</p>
+            <p>Regards,<br/>Accounts Team</p>
+        ]]></field>
+        <field name="email_from">${object.company_id.email or 'info@company.com'}</field>
+    </record>
+</odoo>
