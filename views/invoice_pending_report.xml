@@ -2,37 +2,164 @@
 <odoo>
     <!-- Report Template -->
     <template id="invoice_pending_tpl">
-        <t t-call="web.html_container">
-            <div style="margin:20px;">
-                <h3>Pending Invoice Summary</h3>
-                <t t-if="docs and docs[0]">
-                    <p><strong>Customer:</strong> <t t-esc="docs[0].partner_id.name"/></p>
-                </t>
-                <p><strong>Report Date:</strong> <t t-esc="date" t-options="{'widget': 'date'}"/></p>
-            </div>
+        <t t-call="web.external_layout">
+            <t t-set="o" t-value="docs[0] if docs else None"/>
+            <t t-set="company" t-value="docs[0].company_id if docs else env.company"/>
             
-            <table class="table table-sm" style="width: 90%; margin: 20px auto;">
-                <thead>
-                    <tr>
-                        <th>Invoice #</th>
-                        <th>Customer</th>
-                        <th>Amount Total</th>
-                        <th>Due Date</th>
-                        <th>Payment Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <t t-foreach="docs" t-as="inv">
-                        <tr>
-                            <td><t t-esc="inv.name"/></td>
-                            <td><t t-esc="inv.partner_id.name"/></td>
-                            <td><t t-esc="inv.amount_total" t-options="{'widget': 'monetary', 'display_currency': inv.currency_id}"/></td>
-                            <td><t t-esc="inv.invoice_date_due" t-options="{'widget': 'date'}"/></td>
-                            <td><t t-esc="inv.payment_state"/></td>
-                        </tr>
-                    </t>
-                </tbody>
-            </table>
+            <div class="page">
+                <main>
+                <!-- Header Section -->
+                <div class="row" style="margin-bottom: 30px; border-bottom: 3px solid #875A7B; padding-bottom: 15px;">
+                    <div class="col-12 text-center">
+                        <h2 style="color: #875A7B; font-weight: bold; margin: 0;">Pending Invoice Summary</h2>
+                        <p style="color: #666; margin-top: 5px; font-size: 14px;">Overdue Invoices Report</p>
+                    </div>
+                </div>
+
+                <!-- Customer & Report Info -->
+                <div class="row" style="margin-bottom: 25px;">
+                    <div class="col-6">
+                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #875A7B;">
+                            <h5 style="color: #875A7B; margin-bottom: 10px; font-weight: bold;">Customer Information</h5>
+                            <t t-if="docs and docs[0]">
+                                <p style="margin: 5px 0;"><strong>Name:</strong> <span t-field="docs[0].partner_id.name"/></p>
+                                <p style="margin: 5px 0;" t-if="docs[0].partner_id.email">
+                                    <strong>Email:</strong> <span t-field="docs[0].partner_id.email"/>
+                                </p>
+                                <p style="margin: 5px 0;" t-if="docs[0].partner_id.phone">
+                                    <strong>Phone:</strong> <span t-field="docs[0].partner_id.phone"/>
+                                </p>
+                            </t>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border-left: 4px solid #875A7B;">
+                            <h5 style="color: #875A7B; margin-bottom: 10px; font-weight: bold;">Report Details</h5>
+                            <p style="margin: 5px 0;"><strong>Report Date:</strong> <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d')"/></p>
+                            <p style="margin: 5px 0;"><strong>Total Invoices:</strong> <span t-esc="len(docs)"/></p>
+                            <p style="margin: 5px 0;"><strong>Total Amount Due:</strong> 
+                                <span t-esc="sum(docs.mapped('amount_residual'))" 
+                                      t-options="{'widget': 'monetary', 'display_currency': docs[0].currency_id if docs else None}"/>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice Table -->
+                <div class="row">
+                    <div class="col-12">
+                        <h5 style="color: #875A7B; margin-bottom: 15px; font-weight: bold;">Invoice Details</h5>
+                        <table class="table table-sm table-bordered" style="width: 100%; font-size: 11px;">
+                            <thead style="background-color: #875A7B; color: white;">
+                                <tr>
+                                    <th style="padding: 8px; text-align: left;">#</th>
+                                    <th style="padding: 8px; text-align: left;">Invoice Number</th>
+                                    <th style="padding: 8px; text-align: center;">Invoice Date</th>
+                                    <th style="padding: 8px; text-align: center;">Due Date</th>
+                                    <th style="padding: 8px; text-align: right;">Total Amount</th>
+                                    <th style="padding: 8px; text-align: right;">Amount Due</th>
+                                    <th style="padding: 8px; text-align: center;">Days Overdue</th>
+                                    <th style="padding: 8px; text-align: center;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-set="index" t-value="0"/>
+                                <t t-set="today" t-value="datetime.date.today()"/>
+                                <t t-foreach="docs" t-as="inv">
+                                    <t t-set="index" t-value="index + 1"/>
+                                    <t t-set="days_overdue" t-value="(today - inv.invoice_date_due).days if inv.invoice_date_due else 0"/>
+                                    <tr>
+                                        <td style="padding: 6px; text-align: left;"><t t-esc="index"/></td>
+                                        <td style="padding: 6px; text-align: left; font-weight: bold;">
+                                            <span t-field="inv.name"/>
+                                        </td>
+                                        <td style="padding: 6px; text-align: center;">
+                                            <span t-field="inv.invoice_date" t-options="{'widget': 'date'}"/>
+                                        </td>
+                                        <td style="padding: 6px; text-align: center;">
+                                            <span t-field="inv.invoice_date_due" t-options="{'widget': 'date'}"/>
+                                        </td>
+                                        <td style="padding: 6px; text-align: right; font-weight: bold;">
+                                            <span t-field="inv.amount_total" 
+                                                  t-options="{'widget': 'monetary', 'display_currency': inv.currency_id}"/>
+                                        </td>
+                                        <td style="padding: 6px; text-align: right; font-weight: bold; color: #d9534f;">
+                                            <span t-field="inv.amount_residual" 
+                                                  t-options="{'widget': 'monetary', 'display_currency': inv.currency_id}"/>
+                                        </td>
+                                        <td style="padding: 6px; text-align: center;">
+                                            <span t-if="days_overdue &gt; 0" 
+                                                  style="background-color: #d9534f; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 10px;">
+                                                <t t-esc="days_overdue"/> days
+                                            </span>
+                                        </td>
+                                        <td style="padding: 6px; text-align: center;">
+                                            <span t-if="inv.payment_state == 'not_paid'" 
+                                                  style="background-color: #d9534f; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">
+                                                Not Paid
+                                            </span>
+                                            <span t-if="inv.payment_state == 'partial'" 
+                                                  style="background-color: #f0ad4e; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">
+                                                Partial
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot style="background-color: #f8f9fa; font-weight: bold;">
+                                <tr>
+                                    <td colspan="4" style="padding: 10px; text-align: right; border-top: 2px solid #875A7B;">
+                                        <strong>TOTAL OUTSTANDING:</strong>
+                                    </td>
+                                    <td style="padding: 10px; text-align: right; border-top: 2px solid #875A7B;">
+                                        <span t-esc="sum(docs.mapped('amount_total'))" 
+                                              t-options="{'widget': 'monetary', 'display_currency': docs[0].currency_id if docs else None}"/>
+                                    </td>
+                                    <td style="padding: 10px; text-align: right; border-top: 2px solid #875A7B; color: #d9534f; font-size: 13px;">
+                                        <span t-esc="sum(docs.mapped('amount_residual'))" 
+                                              t-options="{'widget': 'monetary', 'display_currency': docs[0].currency_id if docs else None}"/>
+                                    </td>
+                                    <td colspan="2" style="border-top: 2px solid #875A7B;"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Important Notice -->
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col-12">
+                        <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 12px; border-radius: 5px;">
+                            <h6 style="color: #856404; margin-bottom: 8px; font-weight: bold; font-size: 13px;">⚠ Important Notice</h6>
+                            <p style="color: #856404; margin: 3px 0; font-size: 11px;">
+                                The above invoices are overdue. Please arrange payment at your earliest convenience to avoid any service interruption.
+                            </p>
+                            <p style="color: #856404; margin: 3px 0; font-size: 11px;">
+                                If you have already made the payment, please share the payment details for our records.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Need Help -->
+                <div class="row" style="margin-top: 15px;">
+                    <div class="col-12">
+                        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 5px; border-top: 3px solid #875A7B;">
+                            <h6 style="color: #875A7B; margin-bottom: 8px; font-weight: bold; font-size: 13px;">Need Help?</h6>
+                            <p style="margin: 3px 0; font-size: 11px;">
+                                For any queries regarding these invoices, please contact our accounts department:
+                            </p>
+                            <p style="margin: 3px 0; font-size: 11px;" t-if="company.email">
+                                <strong>Email:</strong> <span t-field="company.email"/>
+                            </p>
+                            <p style="margin: 3px 0; font-size: 11px;" t-if="company.phone">
+                                <strong>Phone:</strong> <span t-field="company.phone"/>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                </main>
+            </div>
         </t>
     </template>
 
@@ -45,5 +172,6 @@
         <field name="report_file">auto_invoice_reminder_daysfilter.invoice_pending_tpl</field>
         <field name="binding_model_id" ref="account.model_account_move"/>
         <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
     </record>
 </odoo>
